@@ -1,2 +1,3 @@
 server/genres
 .ipynb_checkpoints
+__pycache__
