@@ -2,6 +2,7 @@ import io
 import os
 import logging
 from multiprocessing.dummy import Pool
+from pprint import pprint
 
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
@@ -19,10 +20,10 @@ class PostgresqlWrapper(object):
         self.__init_logger()
         self.log.info("Creating pool")
         self.conn_num = conn_num
-        self.conn = psycopg2.connect(self.DATABASE_URL)
+        self.conn = psycopg2.connect(self.LOCALHOST_STING)
         self.cur = self.conn.cursor()
         self.pool = SimpleConnectionPool(
-            self.conn_num, self.conn_num + 5, self.DATABASE_URL)
+            self.conn_num, self.conn_num + 5, self.LOCALHOST_STING)
         self.register_adapters()
         self.create_table(False)
 
@@ -32,6 +33,8 @@ class PostgresqlWrapper(object):
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         ch.setFormatter(formatter)
         self.log = logging.getLogger(__name__)
+        #if (self.log.hasHandlers()):
+        #    self.log.handlers.clear()
         self.log.setLevel(logging.INFO)
         self.log.addHandler(ch)
 
@@ -58,9 +61,9 @@ class PostgresqlWrapper(object):
             cur.execute(statement, (limit, offset))
             self.log.info("Done with %s", statement % (limit, offset))
         else:
-            statement = "Select * from music where genre = %s"
-            self.log.info("Statement %s", statement % (genre))
-            cur.execute(statement, (genre, ))
+            statement = "Select * from music where genre = %s order by id limit %s offset %s"
+            self.log.info("Statement %s", statement % (genre, limit, offset))
+            cur.execute(statement, (genre, limit, offset))
         db_result = cur.fetchall()
         cur.close()
         self.pool.putconn(conn)
@@ -110,7 +113,7 @@ class PostgresqlWrapper(object):
         self.cur.close()
         self.conn.close()
 
-    def fetch_songs(self, count, limit=50):
+    def fetch_songs(self, count, limit=50, genres=None):
         """ Fetch song in concurrent from database
             limit - how many song to fetch from one thread
             count - how many song to fetch
@@ -121,7 +124,11 @@ class PostgresqlWrapper(object):
         offset = 0
         while offset < count:
             offset = limit * iter_
-            producer.append((limit, offset))
+            if genres is not None:
+                for genre in genres:
+                    producer.append((limit, offset, genre))
+            else:
+                producer.append((limit, offset))
             iter_ += 1
         with Pool(self.conn_num) as pool:
             result = pool.starmap(self.select_songs, producer)
@@ -129,7 +136,8 @@ class PostgresqlWrapper(object):
 
 
 if __name__ == '__main__':
-    db = PostgresqlWrapper(3)
+    db = PostgresqlWrapper(5)
     # Fetch 100 songs. acctually 150 ;)
     # Result format (ID, genre, np array song)
-    songs = db.fetch_songs(100)
+    songs = db.fetch_songs(10, genres=['classical', 'jazz', 'metal', 'pop'])
+    pprint(songs)
