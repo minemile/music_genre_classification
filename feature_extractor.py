@@ -4,6 +4,7 @@ from server.database_wrapper import PostgresqlWrapper
 from server.utils import Util
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
+from numpy.linalg import det
 
 
 class FeatureExtractor(object):
@@ -12,15 +13,15 @@ class FeatureExtractor(object):
         self.std_scaler = StandardScaler()
 
     def generate_mfcc(self, n_mfcc, sr=22050):
-        mfcc_means = np.empty((len(self.data), n_mfcc))
+        mfcc_means = np.empty((len(self.data), n_mfcc + 1))
 
         # Generate mfcc means matrix MxN_MFCC
         for i, song in enumerate(self.data):
             if i % 50 == 0: print("Got mfcc for {0} songs".format(i))
-            mfcc = librosa.feature.mfcc(song, sr=sr, n_mfcc=n_mfcc)
+            mfcc = librosa.feature.mfcc(song, sr=sr, n_mfcc=n_mfcc)[:n_mfcc, 1:]
             mfcc_scaled = self.std_scaler.fit_transform(mfcc)
             mfcc_mean = mfcc_scaled.mean(axis=1)
-            mfcc_means[i] = mfcc_mean
+            mfcc_means[i] = np.append(mfcc_mean, det(np.cov(mfcc_scaled, rowvar = True)))
 
         template = "mfcc_mean_{0}"
         col_names = []
@@ -36,6 +37,28 @@ class FeatureExtractor(object):
             zero_crossing_rates_std[i] = zcr.std()
         return zero_crossing_rates_std
 
+    def generate_centoid_meanstd(self, sr=22050):
+        '''
+            Returns ndarray with 2 columns: 
+                First column:  mean
+                Second column: std
+        '''
+        centroid_meanstd = np.empty((len(self.data), 2))
+        for i, song in enumerate(self.data):
+            if i % 50 == 0: print("Got centroid data for {0} songs".format(i))
+            cent = librosa.feature.spectral_centroid(y=song, sr=sr)
+            centroid_meanstd[i, :] = np.array([cent.mean(), cent.std()]) 
+
+        return centroid_meanstd
+    
+    def generate_rhythm(self):
+        rhythm_bpm = np.emty(len(self.data))
+        for i, song in enumerate(self.data):
+            '''TODO'''
+            pass
+        
+            
+        
 
 
 if __name__ == '__main__':
