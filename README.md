@@ -12,3 +12,6 @@ Links:
 4. [Librosa - audio and music processing in Python](https://librosa.github.io)
 
 5. [Dataset marsyas](http://marsyas.info/downloads/datasets.html)
+
+6. [Automatic Musical Genre Classification
+    Of Audio Signals](http://ismir2001.ismir.net/pdf/tzanetakis.pdf)
