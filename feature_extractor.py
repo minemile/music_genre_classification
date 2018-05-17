@@ -102,6 +102,13 @@ class FeatureExtractor(object):
             low_energy[i] = np.sum(rmse <= mean_rmse) / len(rmse)
         
         return low_energy.reshape(-1,1)
+    
+    def generateQtransform(self, sr=22050):
+        qtransform_means = np.empty((len(self.data),12))
+        for i, song in enumerate(self.data):
+            if i % 50 == 0: print("Got qtr data for {0} songs".format(i))
+            qtransform_means[i] = librosa.feature.chroma_cqt(y=song).mean(axis=1)
+        return qtransform_means
 
 if __name__ == '__main__':
     db = PostgresqlWrapper()
