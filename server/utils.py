@@ -1,3 +1,5 @@
+import numpy as np
+
 class Util(object):
 
     def to_dataset(self, data):
@@ -12,3 +14,7 @@ class Util(object):
                 genres.append(genre)
                 n_song += 1
         return songs, genres
+
+    def vector_to_features(self, vector):
+        """ Extract median, mean, max, min, std from vector """
+        return np.array([np.median(vector), vector.mean(), vector.std(), vector.min(), vector.max()])
